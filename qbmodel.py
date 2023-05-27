@@ -3,8 +3,8 @@ import torch as th
 import nltk
 import numpy as np
 import pandas as pd
-import pyserini_guesser
-import bert_guess
+import contextGenerator
+import guesser
 import json
 
 class QuizBowlModel:
@@ -23,7 +23,7 @@ class QuizBowlModel:
         # self.guesser = guesser
 
         # For bert_guess
-        model = bert_guess.BertGuess(True)
+        model = guesser.BertGuess(True)
         self.model = model
 
         

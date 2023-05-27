@@ -1,6 +1,6 @@
 from transformers import BertTokenizer, BertForQuestionAnswering
 import transformers
-import pyserini_guesser 
+import contextGenerator 
 import torch
 import regex as re
 import math
@@ -16,7 +16,7 @@ class BertGuess:
         try:
             # initialize pyserini_guesser
             # used to get context for bert
-            self.context_model = pyserini_guesser.pyserini_guesser('', bool)
+            self.context_model = contextGenerator.pyserini_guesser('', bool)
         except Exception as e:
             print(f"Error loading Pyserini: {e}")
             exit(1)
