@@ -32,4 +32,16 @@ To address these challenges, the "wikipedia-kilt-doc" index was utilized. This i
 
 ## Notes 
 if you want to test the program you can choose to run the test.py file like this: 
-        python3 inference.py --data = evaluation.json
+
+        python3 test.py --data = evaluation.json
+        
+        
+If you run the code without making any changes, it will generate the guess using BERT and a pre-made Pyserini index. It's important to note that this index is quite large, exceeding 10GB in size. Therefore, be prepared for the storage requirements and potential download time.
+
+If you wish to change the default index, you can navigate to the "Context_Generator.py" file and modify line 36 to specify the desired index.
+
+Alternatively, if you prefer to use the pre-made index of quiz bowl questions provided in this repository, you can modify the "Guesser.BertGuess" flag in the "qbmodel" file to set it to "false."
+
+Finally, if you opt for the pure retrieval method, you can uncomment the corresponding sections labeled "pure retrieval" in the "qbmodel" file. This will enable the pure retrieval approach for generating guesses.
+
+Please note that making these changes requires familiarity with the code structure and implementation details.
