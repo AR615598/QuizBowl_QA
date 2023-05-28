@@ -22,4 +22,14 @@ Due to these unique factors, developing a model that can emulate quiz bowl compe
     Frankenstein
     
 ## Methodology 
-To achieve this I chose to use Pyserini and Bert, Pysernin
+
+This project employs two methods to generate guesses. The first method is a straightforward information retrieval model that relies on the top n documents with the highest similarity to the query. The model selects these documents and extracts the corresponding questions and their associated answers. There are two implementation options available. The first option is to create a BM25 index from scratch by building an index using quiz bowl questions. This approach ensures that the index is specifically tailored for quiz bowl content. The second option is to download a pre-made index; however, it is recommended to create a custom index to better handle the unique characteristics of quiz bowl questions. Other existing indexes may struggle with longer queries and could retrieve loosely related documents, potentially impacting the accuracy of the generated guesses.
+
+The second method utilized a pretrained question answering model using Pyserini and BERT. In this approach, Pyserini was employed to retrieve the most closely related document. BERT requires both context and the actual query to work effectively. Pyserini assists by finding a document that potentially contains the answer to the question. However, there are certain constraints to consider. Both the question and the context must not exceed 512 tokens, where each token represents a word. This limitation necessitates truncating the document while ensuring that it still contains the answer.
+
+To address these challenges, the "wikipedia-kilt-doc" index was utilized. This index was selected because the document titles often corresponded to the answer, and the titles were generally located at the beginning of the document. By leveraging this index, the model could better accommodate the token limitations while increasing the chances of capturing the relevant answer within the truncated document.
+
+
+## Notes 
+if you want to test the program you can choose to run the test.py file like this: 
+        python3 inference.py --data = evaluation.json
