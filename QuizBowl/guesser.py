@@ -1,6 +1,6 @@
 from transformers import BertTokenizer, BertForQuestionAnswering
 import transformers
-import contextGenerator 
+from contextGenerator import PyseriniGuesser
 import torch
 import regex as re
 import math
@@ -9,41 +9,27 @@ import json
 from transformers import TrainingArguments, Trainer
 
 
-# generates guesses for a given question
 class BertGuess:
     def __init__(self, bool: True):
 
         try:
-            # initialize pyserini_guesser
-            # used to get context for bert
-            self.context_model = contextGenerator.pyserini_guesser('', bool)
+            self.context_model = PyseriniGuesser('', bool)
         except Exception as e:
             print(f"Error loading Pyserini: {e}")
             exit(1)
         try:
-            # initialize bert
             self.tokenizer = BertTokenizer.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
             self.model = BertForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
             
         except Exception as e:
             print(f"Error loading BERT: {e}")
             exit(1)
-        # for training, but i couldent get it to work    
         optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-5)
         loss_fn = torch.nn.CrossEntropyLoss()
 
 
 
-
-
-    # returns a list of guesses for a given question
-    # truncate_type can be 'simple' or 'chunk'
-    # simple truncation truncates the context to 450 tokens
-    # chunk truncation splits the context into chunks of 450 tokens
-    # and returns the highest confidence guess from each chunk
-    # Simple truncation is faster, but chunk truncation can get more accurate guesses
-    # chunk truncation takes way too long to run, only do for maybe 1 question at a time
-    def __call__(self, question: str, num_guesses: int, truncate_type) -> any:
+    def __call__(self, question: str, num_guesses: int, truncate_type: str) -> any:
         # list of dicts
         guesses = []
         # gets the actual question from the question string
@@ -56,6 +42,8 @@ class BertGuess:
         
         # gets the context from the question
         contexts = self.context_model(question, 1)
+        for context in contexts: 
+            print(context["confidence"])
 
         # loops through each context and gets the guess
         for context in contexts:
@@ -124,6 +112,7 @@ class BertGuess:
     def batch_guess(self, questions: list[str], num_guesses: int, truncate: str) -> list[any]:
         return [self(q, num_guesses, truncate) for q in questions]
     
+    
 
     # truncates the context to 450 tokens
     # returns a string 
@@ -143,4 +132,5 @@ class BertGuess:
             tokens = tokens[450:]
         return chunks
     
+
 
