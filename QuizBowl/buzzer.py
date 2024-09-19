@@ -1,7 +1,9 @@
 ## features include but are not limited to, 
-# persentage of the question given, the 
-# previous occurances of this guess, 
+# percentage of the question given, the
+# previous occurrences of this guess,
 # and finally confidence
+
+
 import torch
 import numpy as np
 
