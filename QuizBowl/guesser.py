@@ -1,80 +1,82 @@
-from transformers import BertTokenizer, BertForQuestionAnswering
-import transformers
-from contextGenerator import PyseriniGuesser
+from transformers import BertTokenizer, BertForQuestionAnswering, AutoTokenizer, RobertaForQuestionAnswering
+from utils import clean_text
+from contextGenerator import LuceneRetrieval
 import torch
-import regex as re
-import math
-from  utils import utils
-import json
-from transformers import TrainingArguments, Trainer
+import torch.nn.functional as f
 
 
 class BertGuess:
-    def __init__(self, bool: True):
+    def __init__(self):
+        checkpoint = "deepset/bert-base-cased-squad2"
 
         try:
-            self.context_model = PyseriniGuesser('', bool)
+            self.context_model = LuceneRetrieval()
         except Exception as e:
-            print(f"Error loading Pyserini: {e}")
+            print(f"Error loading Lucene: {e}")
             exit(1)
         try:
-            self.tokenizer = BertTokenizer.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
-            self.model = BertForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
-            
+            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+            self.model = BertForQuestionAnswering.from_pretrained(checkpoint)
         except Exception as e:
             print(f"Error loading BERT: {e}")
             exit(1)
         optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-5)
         loss_fn = torch.nn.CrossEntropyLoss()
-
-
-
-    def __call__(self, question: str, num_guesses: int, truncate_type: str) -> any:
-        # list of dicts
-        guesses = []
-        # gets the actual question from the question string
-        match = re.match(r'.* For \d+ points, (.*).', question)
-        if match is not None:
-            actual_quest = (match.group(1))      
-        else:
-            actual_quest = question  
-
         
-        # gets the context from the question
-        contexts = self.context_model(question, 1)
-        for context in contexts: 
-            print(context["confidence"])
+        
+    
+    def answer_extraction(self, context, question):
+        encoded_dict = self.tokenizer(
+            text=question,
+            text_pair=context,
+            return_tensors="pt",
+            max_length=512,
+            truncation="only_second",
+        )
+        with torch.no_grad():
+            outputs = self.model(**encoded_dict)
 
-        # loops through each context and gets the guess
+        answer_start = outputs.start_logits.argmax()
+        answer_end = outputs.end_logits.argmax()
+
+        predict_answer_tokens = encoded_dict.input_ids[
+            0, answer_start : answer_end + 1
+        ]
+        
+        answer = self.tokenizer.decode(
+            predict_answer_tokens, skip_special_tokens=True
+        )
+
+        start_probs = f.softmax(outputs.start_logits, dim=-1)
+        end_probs = f.softmax(outputs.end_logits, dim=-1)
+
+        confidence = start_probs[0, answer_start] * end_probs[0, answer_end]
+
+        return {"answer": answer, "confidence": confidence}
+        
+
+    def __call__(
+        self,
+        question: str,
+        num_guesses: int,
+        truncate_type: str,
+        preprocessing: bool = True,
+    ) -> any:
+        guesses = []
+        contexts = self.context_model(question, 1)
+        
+
         for context in contexts:
-            # Decides whether to use simple or chunk truncation
-            curr_context = context['contents']
-            if truncate_type == 'simple':
-                # truncates the context to 450 tokens
-                curr_context = self.simple_truncation(curr_context)
-                # gets the encoded dict from the tokenizer
-                encoded_dict = self.tokenizer.encode_plus(text = actual_quest, text_pair=curr_context, add_special_tokens=True, return_tensors='pt')
-                # gets the input ids and segment ids from the encoded dict
-                input_ids = encoded_dict['input_ids']
-                segment_ids = encoded_dict['token_type_ids']
-                # gets the output from the model
-                out = self.model(input_ids, token_type_ids=segment_ids)
-                # gets the start and end indices of the answer
-                answerStart = torch.argmax(out.start_logits)
-                answerEnd = torch.argmax(out.end_logits)
-                # gets the tokens from the input ids
-                tokens = self.tokenizer.convert_ids_to_tokens(input_ids[0])
-                # gets the answer from the tokens
-                answer = tokens[answerStart]
-                for i in range(answerStart + 1, answerEnd + 1):
-                    if tokens[i][0:2] == '##':
-                        answer += tokens[i][2:]
-                    else:
-                        answer += ' ' + tokens[i]
-                # gets the confidence of the answer    
-                confidence = math.exp(out.start_logits[0][answerStart].item()) + math.exp(out.end_logits[0][answerEnd].item())
-                guesses.append({'answer': answer, 'confidence': confidence})
-            elif truncate_type == 'chunk':
+            curr_context = context["contents"]
+            if preprocessing:
+                curr_context = clean_text(curr_context)
+                question = clean_text(question)
+            
+            if truncate_type == "simple":
+                guesses.append(self.answer_extraction(curr_context, question))
+                
+                
+            elif truncate_type == "chunk":
                 # truncates the context into chunks of 450 tokens
                 # takes way too long to run
                 curr_context = self.chunk_truncation(curr_context)
@@ -82,45 +84,24 @@ class BertGuess:
                 highest_confidence = -100
                 highest_answer = None
                 for chunk in curr_context:
-                    encoded_dict = self.tokenizer.encode_plus(text = actual_quest, text_pair=chunk, add_special_tokens=True, return_tensors='pt')
-                    input_ids = encoded_dict['input_ids']
-                    segment_ids = encoded_dict['token_type_ids']
-                    out = self.model(input_ids, token_type_ids=segment_ids)
-                    answerStart = torch.argmax(out.start_logits)
-                    answerEnd = torch.argmax(out.end_logits)
-                    tokens = self.tokenizer.convert_ids_to_tokens(input_ids[0])
-                    answer = tokens[answerStart]
-                    for i in range(answerStart + 1, answerEnd + 1):
-                        if tokens[i][0:2] == '##':
-                            answer += tokens[i][2:]
-                        else:
-                            answer += ' ' + tokens[i]
-                    confidence = math.exp(out.start_logits[0][answerStart].item()) + math.exp(out.end_logits[0][answerEnd].item())
-                    # gets the highest confidence guess
-                    if confidence > highest_confidence:
-                        highest_confidence = confidence
-                        highest_answer = answer
-                guesses.append({'answer': highest_answer, 'confidence': highest_confidence})
-        guesses.sort(key=lambda x: x['confidence'], reverse=True)
+                    guesses.append(self.answer_extraction(chunk, question))
+        guesses.sort(key=lambda x: x["confidence"], reverse=True)
         # returns the top num_guesses guesses
         return guesses[:num_guesses]
 
-            
-            
-        
     # returns a list of guesses for a list of questions
-    def batch_guess(self, questions: list[str], num_guesses: int, truncate: str) -> list[any]:
+    def batch_guess(
+        self, questions: list[str], num_guesses: int, truncate: str
+    ) -> list[any]:
         return [self(q, num_guesses, truncate) for q in questions]
-    
-    
 
     # truncates the context to 450 tokens
-    # returns a string 
-    def simple_truncation(self, question: str):
+    # returns a string
+    def simple_truncation(self, question: str, length: int):
         tokens = self.tokenizer.tokenize(question)
-        tokens = tokens[:412]
+        tokens = tokens[:length]
         return self.tokenizer.convert_tokens_to_string(tokens)
-    
+
     # truncates the context into chunks of 450 tokens
     # returns a list of strings
     def chunk_truncation(self, question):
@@ -131,6 +112,3 @@ class BertGuess:
             chunks.append(self.tokenizer.convert_tokens_to_string(chunk))
             tokens = tokens[450:]
         return chunks
-    
-
-
