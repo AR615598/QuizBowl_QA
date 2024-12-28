@@ -1,7 +1,5 @@
 from typing import Any
 from pyserini.search.lucene import LuceneSearcher
-import subprocess
-import os
 import json
 
 # enwiki-paragraphs
