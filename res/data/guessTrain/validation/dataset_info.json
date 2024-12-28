@@ -1,0 +1,126 @@
+{
+  "builder_name": "parquet",
+  "citation": "",
+  "config_name": "mode=first,char_skip=25",
+  "dataset_name": "qanta",
+  "dataset_size": 147410349,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/community-datasets/qanta@e3c5602229e5c0c8572636a81cb366eb9ccfa890/mode=first,char_skip=25/guesstrain-00000-of-00001.parquet": {
+      "num_bytes": 72436046,
+      "checksum": null
+    },
+    "hf://datasets/community-datasets/qanta@e3c5602229e5c0c8572636a81cb366eb9ccfa890/mode=first,char_skip=25/buzztrain-00000-of-00001.parquet": {
+      "num_bytes": 12210910,
+      "checksum": null
+    },
+    "hf://datasets/community-datasets/qanta@e3c5602229e5c0c8572636a81cb366eb9ccfa890/mode=first,char_skip=25/guessdev-00000-of-00001.parquet": {
+      "num_bytes": 891115,
+      "checksum": null
+    },
+    "hf://datasets/community-datasets/qanta@e3c5602229e5c0c8572636a81cb366eb9ccfa890/mode=first,char_skip=25/buzzdev-00000-of-00001.parquet": {
+      "num_bytes": 980444,
+      "checksum": null
+    },
+    "hf://datasets/community-datasets/qanta@e3c5602229e5c0c8572636a81cb366eb9ccfa890/mode=first,char_skip=25/guesstest-00000-of-00001.parquet": {
+      "num_bytes": 1901004,
+      "checksum": null
+    },
+    "hf://datasets/community-datasets/qanta@e3c5602229e5c0c8572636a81cb366eb9ccfa890/mode=first,char_skip=25/buzztest-00000-of-00001.parquet": {
+      "num_bytes": 1650491,
+      "checksum": null
+    },
+    "hf://datasets/community-datasets/qanta@e3c5602229e5c0c8572636a81cb366eb9ccfa890/mode=first,char_skip=25/adversarial-00000-of-00001.parquet": {
+      "num_bytes": 770014,
+      "checksum": null
+    }
+  },
+  "download_size": 90840024,
+  "features": {
+    "qanta_id": {
+      "dtype": "int32",
+      "_type": "Value"
+    },
+    "full_question": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "raw_answer": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "category": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "subcategory": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "tournament": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "difficulty": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "year": {
+      "dtype": "int32",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 238250373,
+  "splits": {
+    "guesstrain": {
+      "name": "guesstrain",
+      "num_bytes": 117785655,
+      "num_examples": 96221,
+      "dataset_name": "qanta"
+    },
+    "buzztrain": {
+      "name": "buzztrain",
+      "num_bytes": 19730710,
+      "num_examples": 16706,
+      "dataset_name": "qanta"
+    },
+    "guessdev": {
+      "name": "guessdev",
+      "num_bytes": 1417187,
+      "num_examples": 1055,
+      "dataset_name": "qanta"
+    },
+    "buzzdev": {
+      "name": "buzzdev",
+      "num_bytes": 1556170,
+      "num_examples": 1161,
+      "dataset_name": "qanta"
+    },
+    "guesstest": {
+      "name": "guesstest",
+      "num_bytes": 3001926,
+      "num_examples": 2151,
+      "dataset_name": "qanta"
+    },
+    "buzztest": {
+      "name": "buzztest",
+      "num_bytes": 2657743,
+      "num_examples": 1953,
+      "dataset_name": "qanta"
+    },
+    "adversarial": {
+      "name": "adversarial",
+      "num_bytes": 1260958,
+      "num_examples": 1145,
+      "dataset_name": "qanta"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}
