@@ -1,35 +1,40 @@
-## features include but are not limited to, 
+## features include but are not limited to,
 # percentage of the question given, the
 # previous occurrences of this guess,
 # and finally confidence
 
 
-import torch
+import torch.nn 
 import numpy as np
 
 
-class Buzzer(torch.nn.Module): 
+class Buzzer(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.weights = torch.tensor(np.random.rand(1, 4))
-        lin0 = torch.nn.Linear(4, 1)
-        act0 = torch.nn.ReLU()
-        lin1 = torch.nn.Linear(4, 1)
-        act1 = torch.nn.ReLU() 
-        self.model = torch.nn.Sequential(lin0, act0, lin1, act1)
-
-        self.guesses = {}
-    def forward(self):
-        pass
-
-    def __call__(self, conf: int, num_occ: int, time: float) -> list[int]:
+        self.w = [[1,0,0]]
         
+        l_1 = torch.nn.Linear(3,1)
+        l_1.weight = torch.nn.Parameter(torch.tensor(self.w, dtype=torch.float32))
+        l_1.bias = torch.nn.Parameter(torch.tensor([0.0], dtype= torch.float32))
+        self.nn = torch.nn.Sequential(
+            l_1
+        )
 
-        return self.model()
+    def forward(self, x):
+        return self.nn(x)
+
+
     def train(self):
         pass
+
     def save(self):
         pass
+
     def load(self):
         pass
 
+
+if __name__ == "__main__":
+    model = Buzzer() 
+    input_tensor = torch.randn(15, 3) 
+    output_tensor = model(input_tensor)
