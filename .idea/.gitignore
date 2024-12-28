@@ -5,6 +5,22 @@
 __pycache__/
 *.py[cod]
 
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
+
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
+
+.__pycache__
+._.__pycache__
+**/.__pycache__
+**/._.__pycache__
+
+
 # C extensions
 *.so
 
@@ -52,7 +68,6 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
-res/
 
 *.pyc
 *.pyo
