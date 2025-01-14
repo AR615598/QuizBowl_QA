@@ -33,7 +33,7 @@ class LuceneRetrieval():
         docs = []
         for hit in hits:
             dict = json.loads(hit.lucene_document.get("raw"))
-            contents = utils.lazy_split(dict["contents"], " ")
+            contents = utils.lazy_split(dict["contents"], " ", 400)
             contents = (" ").join(contents)
             score = hit.score
             id = dict["id"]
