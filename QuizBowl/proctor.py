@@ -35,8 +35,8 @@ class Proctor:
 
 
     def new_question(self, question: dict) -> None:
-        self.question = question["text"].split(" ")
-        self.answer = question["answer"]
+        self.question = question["full_question"].split(" ")
+        self.answer = question["raw_answer"]
         self.tot_len = len(self.question)
         self.cur_len = 10
     

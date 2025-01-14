@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 from proctor import Proctor
 from buzzer import Buzzer
-from guesser import BertGuess
+from guesser import Guesser
 import json
 
 class QBAM:
 
-    def __init__(self):
-        self.model = BertGuess(True)
+    def __init__(self, model: str = "BERT"):
+        self.model = Guesser(model)
         self.buzzer = Buzzer()    
         self.proctor = Proctor(self.model, self.buzzer)
 
@@ -44,15 +44,6 @@ class QBAM:
         pass
     def evaluate(self, json_file: str) -> dict:
         pass
-
-
-    # Fine-tuning the model
-    ## 5. choose buzzer mode, static or dynamic
-    ## 6. fit the buzzer
-    ## 7. save the buzzer
-    ## 8. adjust preprocessing aggression, for example not remolding stop words, or adjusting stop word bag i.e the words that will be removed from the document
-    ## 9. adjust how often the proctor will ask the model the questions 
-    ## 10. guesser fine-tuning please help me
 
 if __name__ == "__main__":
         question = "A speaker of one of this man's poems eats \"reality sandwiches\" and admits \"a naked lunch is natural to us.\" The speaker of another of this man's poems asserts that \"Death is that remedy all singers dream of\" as he walks in Greenwich Village thinking of his mother Naomi. The refrain \"I'm with you in Rockland\" appears in another poem by this author of \"Kaddish.\" That poem by this man begins, \"I saw the best (*) minds of my generation destroyed by madness.\" For 10 points, name this Beat poet who wrote \"Howl.\"" 
