@@ -65,12 +65,12 @@ def get_top_n(lst: list, n: int) -> list:
     lst.sort(reverse = True)
     return lst[:n]
 
-def lazy_split(string, sep):
+def lazy_split(string, sep, n = 400):
     splits = []
     temp = ''
     i = 0
     for char in string:
-        if i > 400:
+        if i > n:
             break
         if char == sep:
             splits.append(temp)
