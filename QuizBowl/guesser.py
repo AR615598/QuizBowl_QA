@@ -3,9 +3,59 @@ from utils import clean_text
 from contextGenerator import LuceneRetrieval
 import torch
 import torch.nn.functional as f
+import spacy
+
+class Guesser:
+    def __init__(self, model: str):
+        if model == "BERT":
+            self.model = BertGuess()
+        elif model == "RET":
+            self.model = RETGuess() 
+        else: 
+            raise ValueError("Invalid model type, model must be either BERT or RET")
+            
+    
+    def  __call__(self,
+            question: str,
+            num_guesses: int,
+            truncate_type: str,
+            preprocessing: bool = True):
+        
+        return self.model(
+            question,
+            num_guesses,
+            truncate_type,
+            preprocessing,
+        )
+        
+class RETGuess():
+    def __init__(self):
+        self.context_model = LuceneRetrieval()
+        self.nlp = spacy.load("en_core_web_lg")
+
+    def extract_title(self, context): 
+        tokens = self.nlp(context)
+        ents = [x.text for x in tokens.ents]
+        if len(tokens.ents) > 0: 
+            return ents[0]
+        else:
+            return "NAN"
 
 
-class BertGuess:
+    def  __call__(self,
+                  question: str,
+                  num_guesses: int,
+                  truncate_type: str,
+                  preprocessing: bool = True):
+        context = self.context_model(question, 1)[0]
+        cont, conf = context['contents'], context['confidence']
+        cont = (" ").join(cont.split(" ")[:10])
+        y_hat = self.extract_title(cont)
+        x = [{"answer": y_hat, "confidence": conf}]
+        return [{"answer": y_hat, "confidence": conf}]
+    
+    
+class BertGuess():
     def __init__(self):
         checkpoint = "deepset/bert-base-cased-squad2"
 
