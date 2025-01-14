@@ -1,7 +1,8 @@
 from typing import Any
 from pyserini.search.lucene import LuceneSearcher
 import json
-
+import spacy
+import utils 
 # enwiki-paragraphs
 # wikipeia-dpr
 # wikipedia-dpr-multi-bf
@@ -12,13 +13,28 @@ import json
 class LuceneRetrieval():
     def __init__(self):
         self.searcher = LuceneSearcher.from_prebuilt_index("wikipedia-kilt-doc")
+        self.nlp = spacy.load("en_core_web_lg")
+
+        
+    def ner_extraction(self, question: str):
+        tok = self.nlp(question)
+        ents = [x.text for x in tok.ents]
+        for toks in tok:
+            if toks.pos_ == 'NOUN':
+                ents.append(toks.text)
+        agg_ents = " ".join(ents)
+        return agg_ents
+        
+    
 
     def __call__(self, question: str, num_guesses: int) -> list[Any]:
-        hits = self.searcher.search(question, k=num_guesses)
+        ents = self.ner_extraction(question)
+        hits = self.searcher.search(ents, k=num_guesses)
         docs = []
         for hit in hits:
             dict = json.loads(hit.lucene_document.get("raw"))
-            contents = dict["contents"]
+            contents = utils.lazy_split(dict["contents"], " ")
+            contents = (" ").join(contents)
             score = hit.score
             id = dict["id"]
             docs.append({"id": id, "contents": contents, "confidence": score})
