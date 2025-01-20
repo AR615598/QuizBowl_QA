@@ -1,4 +1,4 @@
-from transformers import BertTokenizer, BertForQuestionAnswering, AutoTokenizer, RobertaForQuestionAnswering
+from transformers import DistilBertTokenizer, TFDistilBertForQuestionAnswering
 from utils import clean_text
 from contextGenerator import LuceneRetrieval
 import torch
@@ -57,7 +57,7 @@ class RETGuess():
     
 class BertGuess():
     def __init__(self):
-        checkpoint = "deepset/bert-base-cased-squad2"
+        checkpoint = "distilbert-base-cased-distilled-squad "
 
         try:
             self.context_model = LuceneRetrieval()
@@ -65,8 +65,8 @@ class BertGuess():
             print(f"Error loading Lucene: {e}")
             exit(1)
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint)
-            self.model = BertForQuestionAnswering.from_pretrained(checkpoint)
+            self.tokenizer = DistilBertTokenizer.from_pretrained(checkpoint)
+            self.model = TFDistilBertForQuestionAnswering.from_pretrained.from_pretrained(checkpoint)
         except Exception as e:
             print(f"Error loading BERT: {e}")
             exit(1)
