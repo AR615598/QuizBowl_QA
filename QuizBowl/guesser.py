@@ -1,4 +1,4 @@
-from transformers import DistilBertTokenizer, TFDistilBertForQuestionAnswering
+from transformers import DistilBertTokenizer, DistilBertModel
 from utils import clean_text
 from contextGenerator import LuceneRetrieval
 import torch
@@ -57,7 +57,7 @@ class RETGuess():
     
 class BertGuess():
     def __init__(self):
-        checkpoint = "distilbert-base-cased-distilled-squad "
+        self.checkpoint = "distilbert-base-cased-distilled-squad"
 
         try:
             self.context_model = LuceneRetrieval()
@@ -65,8 +65,8 @@ class BertGuess():
             print(f"Error loading Lucene: {e}")
             exit(1)
         try:
-            self.tokenizer = DistilBertTokenizer.from_pretrained(checkpoint)
-            self.model = TFDistilBertForQuestionAnswering.from_pretrained.from_pretrained(checkpoint)
+            self.tokenizer = DistilBertTokenizer.from_pretrained(self.checkpoint)
+            self.model = DistilBertModel.from_pretrained(self.checkpoint)
         except Exception as e:
             print(f"Error loading BERT: {e}")
             exit(1)
@@ -162,3 +162,18 @@ class BertGuess():
             chunks.append(self.tokenizer.convert_tokens_to_string(chunk))
             tokens = tokens[450:]
         return chunks
+    
+    def save(self, dir_name: str):
+        try: 
+            self.model.save_pretrained(save_directory = dir_name) 
+        except:
+            exit
+
+    def load(self, dir_name: str):
+        self.checkpoint = dir_name
+        try:
+            self.tokenizer = DistilBertTokenizer.from_pretrained(self.checkpoint)
+            self.model = DistilBertModel.from_pretrained(self.checkpoint)
+        except Exception as e:
+            print(f"Error loading BERT: {e}")
+            exit(1)

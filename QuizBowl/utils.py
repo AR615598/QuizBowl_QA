@@ -3,9 +3,11 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 from string import punctuation
-# from transformers import BertTokenizer, BertModel
+from transformers import BertTokenizer, BertModel
+from transformers import BatchEncoding
 import torch
 import spacy
+import re
 ## You may need to download stopwords and wordnet with the following: nltk.download('wordnet')
 # tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 # model = BertModel.from_pretrained('bert-base-uncased')
@@ -29,32 +31,6 @@ def clean_text(text: str) -> str:
     lemma = WordNetLemmatizer()
     text = ' '.join([lemma.lemmatize(word) for word in text.split()])
     return text
-
-
-def tokenize_text_words(text: str) -> list[str]:
-    """
-    This will tokenize the text into words.
-    return: List[str]
-    """
-    return word_tokenize(text)
-
-def tokenize_text_sentences(text: str) -> list[str]:
-    """
-    This will tokenize the text into sentences.
-    return: List[str]
-    """
-    return sent_tokenize(text)
-
-def word_embedding(text: str, contexual: bool = False) -> torch.tensor:
-    """
-    This will return a word embedding of the text.
-    return: List[str]
-    """
-    if contexual:
-        return torch.tensor(nlp2(text).vector)
-    else:
-        return torch.tensor(nlp3(text).vector)
-
 
 ## General Utils
 def get_top_n(lst: list, n: int) -> list:
@@ -80,3 +56,35 @@ def lazy_split(string, sep, n = 400):
             temp += char    
     return splits
 
+def term_char_index(ans: str, context: str):
+    return [(m.start(), m.end()) for m in re.finditer(ans.replace("_"," "), context, flags = re.IGNORECASE)]
+
+# char_to_token 
+def tokenize_row(row: dict, tokenizer):
+    encoding =  tokenizer(
+        text = row['context']['contents'], 
+        text_pair = row['full_question'], 
+        padding = 'max_length', 
+        truncation = 'only_first', 
+        max_length = 512, 
+        return_tensors = 'pt', 
+        padding_side = 'right'
+        )
+    start_pos = []
+    end_pos = []
+    # Convert the dictionary to a BatchEncoding object
+    for (x, y) in row['char_pos']:
+        start_pos.append(encoding.char_to_token(x))
+        end_pos.append(encoding.char_to_token(y - 1))
+    return start_pos, end_pos, encoding
+    
+
+def token_positions(row: dict):
+    start_pos = []
+    end_pos = []
+    # Convert the dictionary to a BatchEncoding object
+    encodings = BatchEncoding(row['encodings'], tensor_type='pt')
+    for (x, y) in row['char_pos']:
+        start_pos.append(encodings.char_to_token(x))
+        end_pos.append(encodings.char_to_token(y - 1))
+    return start_pos, end_pos

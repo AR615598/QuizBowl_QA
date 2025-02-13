@@ -30,8 +30,21 @@ class LuceneRetrieval():
     def __call__(self, question: str, num_guesses: int) -> list[Any]:
         ents = self.ner_extraction(question)
         hits = self.searcher.search(ents, k=num_guesses)
+        return self.scored_to_dict(hits, num_guesses)
+
+    def batch_guess(self, questions: list[str], num_guesses: int):
+        qids = [str(x) for x in range(len(questions))]
+        hits =  self.searcher.batch_search(questions, qids, k=num_guesses, threads=1)
+        batch = []
+        for qid in qids:
+            match = hits[qid]
+            batch.append(self.scored_to_dict(match, num_guesses))
+        return batch
+
+    def scored_to_dict(self, obj, num_guesses):
+        match = obj
         docs = []
-        for hit in hits:
+        for hit in match:
             dict = json.loads(hit.lucene_document.get("raw"))
             contents = utils.lazy_split(dict["contents"], " ", 400)
             contents = (" ").join(contents)
@@ -42,7 +55,3 @@ class LuceneRetrieval():
             lst = [({"id": -1, "contents": "", "confidence": 0}) for x in range(num_guesses - len(docs))]
             docs.extend(lst)
         return docs
-
-    def batch_guess(self, questions: list[str]):
-        qids = [x for x in range(len(questions))]
-        return self.searcher.batch_search(questions,qids=qids, k=1)
