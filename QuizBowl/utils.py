@@ -57,6 +57,7 @@ def lazy_split(string, sep, n = 400):
     return splits
 
 def term_char_index(ans: str, context: str):
+    ans = ans.split("(")[0]
     return [(m.start(), m.end()) for m in re.finditer(ans.replace("_"," "), context, flags = re.IGNORECASE)]
 
 # char_to_token 
