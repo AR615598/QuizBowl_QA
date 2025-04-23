@@ -10,8 +10,8 @@ import json
 
 class QBAM:
 
-    def __init__(self, model: str = "BERT"):
-        self.model = Guesser(model)
+    def __init__(self, model: str = "BERT", checkpoint: str = "distilbert-base-cased-distilled-squad"):
+        self.model = Guesser(model, checkpoint)
         self.buzzer = Buzzer()    
         self.proctor = Proctor(self.model, self.buzzer)
 

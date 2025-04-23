@@ -1,14 +1,14 @@
-from transformers import DistilBertTokenizer, DistilBertModel
+from transformers import DistilBertTokenizerFast, DistilBertForQuestionAnswering
 from utils import clean_text
 from contextGenerator import LuceneRetrieval
 import torch
 import torch.nn.functional as f
 import spacy
-
+import utils
 class Guesser:
-    def __init__(self, model: str):
+    def __init__(self, model: str, checkpoint: str = "distilbert-base-cased-distilled-squad"):
         if model == "BERT":
-            self.model = BertGuess()
+            self.model = BertGuess(checkpoint)
         elif model == "RET":
             self.model = RETGuess() 
         else: 
@@ -19,7 +19,7 @@ class Guesser:
             question: str,
             num_guesses: int,
             truncate_type: str,
-            preprocessing: bool = True):
+            preprocessing: bool = False):
         
         return self.model(
             question,
@@ -56,8 +56,8 @@ class RETGuess():
     
     
 class BertGuess():
-    def __init__(self):
-        self.checkpoint = "distilbert-base-cased-distilled-squad"
+    def __init__(self, checkpoint: str = "distilbert-base-cased-distilled-squad"):
+        self.checkpoint = checkpoint
 
         try:
             self.context_model = LuceneRetrieval()
@@ -65,8 +65,8 @@ class BertGuess():
             print(f"Error loading Lucene: {e}")
             exit(1)
         try:
-            self.tokenizer = DistilBertTokenizer.from_pretrained(self.checkpoint)
-            self.model = DistilBertModel.from_pretrained(self.checkpoint)
+            self.tokenizer = DistilBertTokenizerFast.from_pretrained(self.checkpoint)
+            self.model = DistilBertForQuestionAnswering.from_pretrained(self.checkpoint)
         except Exception as e:
             print(f"Error loading BERT: {e}")
             exit(1)
@@ -76,20 +76,34 @@ class BertGuess():
         
     
     def answer_extraction(self, context, question):
-        encoded_dict = self.tokenizer(
-            text=question,
-            text_pair=context,
-            return_tensors="pt",
-            max_length=512,
-            truncation="only_second",
-        )
+        try: 
+            encoding =  self.tokenizer(
+                text = context, 
+                text_pair = question, 
+                padding = 'max_length', 
+                truncation = 'only_first', 
+                max_length = 512, 
+                return_tensors = 'pt', 
+                padding_side = 'right',
+            )
+        except:
+            cleaned = utils.clean_text(question)
+            encoding =  self.tokenizer(
+                text = context,
+                text_pair = cleaned, 
+                padding = 'max_length', 
+                truncation = 'only_first', 
+                max_length = 512, 
+                return_tensors = 'pt', 
+                padding_side = 'right',
+                )
         with torch.no_grad():
-            outputs = self.model(**encoded_dict)
+            outputs = self.model(**encoding)
 
         answer_start = outputs.start_logits.argmax()
         answer_end = outputs.end_logits.argmax()
 
-        predict_answer_tokens = encoded_dict.input_ids[
+        predict_answer_tokens = encoding.input_ids[
             0, answer_start : answer_end + 1
         ]
         
@@ -110,12 +124,10 @@ class BertGuess():
         question: str,
         num_guesses: int,
         truncate_type: str,
-        preprocessing: bool = True,
+        preprocessing: bool = False,
     ) -> any:
         guesses = []
         contexts = self.context_model(question, 1)
-        
-
         for context in contexts:
             curr_context = context["contents"]
             if preprocessing:
