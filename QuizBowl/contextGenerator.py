@@ -4,11 +4,6 @@ import json
 import spacy
 import utils 
 import re
-# enwiki-paragraphs
-# wikipeia-dpr
-# wikipedia-dpr-multi-bf
-# wikipedia-dpr-dkrr-tqa
-
 
 # class to generate context for bert_guess
 class LuceneRetrieval():
@@ -89,8 +84,9 @@ class LuceneRetrieval():
             dict = json.loads(hit.lucene_document.get("raw"))
             contents = utils.lazy_split(dict["contents"], " ", 400)
             contents = (" ").join(contents)
-            contents = re.sub('\n', '', contents)
+            contents = re.sub('\n', ' ',contents)
             contents = self.remove_adj_dup(contents)
+            
 
             score = hit.score
             id = dict["id"]

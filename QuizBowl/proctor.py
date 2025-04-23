@@ -28,7 +28,7 @@ class Proctor:
         if self.cur_len > self.tot_len: 
             self.cur_len = self.tot_len
         cur = " ".join(self.question[:(self.cur_len + 1)])        
-        ans = self.guesser(cur, 1, 'simple')
+        ans = self.guesser(cur, 1)
         guess = ans[0]["answer"]
         conf = ans[0]["confidence"]
         return guess, conf

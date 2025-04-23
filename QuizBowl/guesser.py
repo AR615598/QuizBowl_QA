@@ -5,6 +5,8 @@ import torch
 import torch.nn.functional as f
 import spacy
 import utils
+import numpy as np
+import itertools
 class Guesser:
     def __init__(self, model: str, checkpoint: str = "distilbert-base-cased-distilled-squad"):
         if model == "BERT":
@@ -17,15 +19,11 @@ class Guesser:
     
     def  __call__(self,
             question: str,
-            num_guesses: int,
-            truncate_type: str,
-            preprocessing: bool = False):
+            num_guesses: int):
         
         return self.model(
             question,
-            num_guesses,
-            truncate_type,
-            preprocessing,
+            num_guesses
         )
         
 class RETGuess():
@@ -44,9 +42,8 @@ class RETGuess():
 
     def  __call__(self,
                   question: str,
-                  num_guesses: int,
-                  truncate_type: str,
-                  preprocessing: bool = True):
+                  num_guesses: int
+                  ) -> any:
         context = self.context_model(question, 1)[0]
         cont, conf = context['contents'], context['confidence']
         cont = (" ").join(cont.split(" ")[:10])
@@ -73,22 +70,50 @@ class BertGuess():
         optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-5)
         loss_fn = torch.nn.CrossEntropyLoss()
         
+    def valid_spans(self, st_pos, ed_pos, k):
+        top_k_idx_start = np.argpartition(st_pos, range(-k, 0, 1), None)[-k:]
+        top_k_idx_end = np.argpartition(ed_pos, range(-k, 0, 1), None)[-k:]
+        zeroes = None
+        if 0 in top_k_idx_start or 0 in top_k_idx_end:
+            top_k_idx_start = np.delete(top_k_idx_start, np.where(top_k_idx_start == 0))
+            top_k_idx_end = np.delete(top_k_idx_end, np.where(top_k_idx_end == 0))
+            zeroes = [(0,0)]
+            
+        try:
+            pair_matrix = list(itertools.product(top_k_idx_start, top_k_idx_end)) + zeroes
+        except:
+             pair_matrix = list(itertools.product(top_k_idx_start, top_k_idx_end))
+             
+        for x in pair_matrix: 
+            st, ed = x
+            if st > ed: 
+                pair_matrix.remove(x)
+        score_matrix = np.full(len(pair_matrix), np.NINF)
+
+        for i, pair in enumerate(pair_matrix):
+            start, end = pair
+            score_matrix[i] = st_pos[0,start] + ed_pos[0,end]
         
+        lst = ([pair_matrix[x] for x in np.argpartition(score_matrix, range(-k, 0, 1), None)[-k:]])
+        lst.reverse()
+        
+        return lst
     
     def answer_extraction(self, context, question):
-        try: 
-            encoding =  self.tokenizer(
+        k = 5
+        try:
+            inputs = self.tokenizer(
                 text = context, 
-                text_pair = question, 
+                text_pair=question, 
                 padding = 'max_length', 
                 truncation = 'only_first', 
                 max_length = 512, 
                 return_tensors = 'pt', 
-                padding_side = 'right',
-            )
+                padding_side = 'right'
+                )
         except:
             cleaned = utils.clean_text(question)
-            encoding =  self.tokenizer(
+            inputs =  self.tokenizer(
                 text = context,
                 text_pair = cleaned, 
                 padding = 'max_length', 
@@ -96,57 +121,36 @@ class BertGuess():
                 max_length = 512, 
                 return_tensors = 'pt', 
                 padding_side = 'right',
+                return_length = True
                 )
         with torch.no_grad():
-            outputs = self.model(**encoding)
+            outputs = self.model(**inputs)
+        answer_start_index = None
+        answer_end_index = None
 
-        answer_start = outputs.start_logits.argmax()
-        answer_end = outputs.end_logits.argmax()
+        top_k = self.valid_spans(outputs.start_logits.detach(), outputs.end_logits.detach(), k)
+        answer_start_index, answer_end_index= top_k[0]
 
-        predict_answer_tokens = encoding.input_ids[
-            0, answer_start : answer_end + 1
-        ]
-        
-        answer = self.tokenizer.decode(
-            predict_answer_tokens, skip_special_tokens=True
-        )
+        if answer_start_index == None : 
+            answer_start_index = 0
+            answer_end_index = 0     
+                           
+        answer = self.tokenizer.decode(inputs['input_ids'][0,answer_start_index:answer_end_index+ 1])
+        confidence = outputs.start_logits[0, answer_start_index]  + outputs.end_logits[0, answer_end_index]
 
-        start_probs = f.softmax(outputs.start_logits, dim=-1)
-        end_probs = f.softmax(outputs.end_logits, dim=-1)
-
-        confidence = start_probs[0, answer_start] * end_probs[0, answer_end]
-
-        return {"answer": answer, "confidence": confidence}
+        return {"answer": answer, "confidence": confidence} 
         
 
     def __call__(
         self,
         question: str,
-        num_guesses: int,
-        truncate_type: str,
-        preprocessing: bool = False,
+        num_guesses: int
     ) -> any:
         guesses = []
         contexts = self.context_model(question, 1)
         for context in contexts:
             curr_context = context["contents"]
-            if preprocessing:
-                curr_context = clean_text(curr_context)
-                question = clean_text(question)
-            
-            if truncate_type == "simple":
-                guesses.append(self.answer_extraction(curr_context, question))
-                
-                
-            elif truncate_type == "chunk":
-                # truncates the context into chunks of 450 tokens
-                # takes way too long to run
-                curr_context = self.chunk_truncation(curr_context)
-                # gets the highest confidence guess from each chunk
-                highest_confidence = -100
-                highest_answer = None
-                for chunk in curr_context:
-                    guesses.append(self.answer_extraction(chunk, question))
+            guesses.append(self.answer_extraction(curr_context, question))
         guesses.sort(key=lambda x: x["confidence"], reverse=True)
         # returns the top num_guesses guesses
         return guesses[:num_guesses]
@@ -184,8 +188,8 @@ class BertGuess():
     def load(self, dir_name: str):
         self.checkpoint = dir_name
         try:
-            self.tokenizer = DistilBertTokenizer.from_pretrained(self.checkpoint)
-            self.model = DistilBertModel.from_pretrained(self.checkpoint)
+            self.tokenizer = DistilBertTokenizerFast.from_pretrained(self.checkpoint)
+            self.model = DistilBertForQuestionAnswering.from_pretrained(self.checkpoint)
         except Exception as e:
             print(f"Error loading BERT: {e}")
             exit(1)

@@ -1,12 +1,12 @@
 from typing import List, Tuple
 import torch as th
-import nltk
 import numpy as np
 import pandas as pd
 from proctor import Proctor
 from buzzer import Buzzer
 from guesser import Guesser
 import json
+import datasets
 
 class QBAM:
 
@@ -46,12 +46,14 @@ class QBAM:
         pass
 
 if __name__ == "__main__":
-        question = "A speaker of one of this man's poems eats \"reality sandwiches\" and admits \"a naked lunch is natural to us.\" The speaker of another of this man's poems asserts that \"Death is that remedy all singers dream of\" as he walks in Greenwich Village thinking of his mother Naomi. The refrain \"I'm with you in Rockland\" appears in another poem by this author of \"Kaddish.\" That poem by this man begins, \"I saw the best (*) minds of my generation destroyed by madness.\" For 10 points, name this Beat poet who wrote \"Howl.\"" 
-        answer= "Allen Ginsberg"
-        question = {"text": question, "answer": answer}
-        model = QBAM()
+        ds = datasets.load_from_disk('../res/data/QANTA-IgnoreIMP')
 
-        score, guess = model(question)
+        question = ds['guesstrain'][0]
+        answer = question['answer']
+        model = QBAM(checkpoint = "../res/models/optuna_IgnoreIMP")
+
+        score, guess = model(question, 1)
+        print(f"Question: {question['text']}")
         print(f"Prediction: {guess}, Score: {score}") 
         print(f"Answer: {answer}") 
 
