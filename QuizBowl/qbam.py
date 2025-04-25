@@ -52,7 +52,7 @@ if __name__ == "__main__":
         answer = question['answer']
         model = QBAM(checkpoint = "../res/models/optuna_IgnoreIMP")
 
-        score, guess = model(question, 1)
+        score, guess = model(question)
         print(f"Question: {question['text']}")
         print(f"Prediction: {guess}, Score: {score}") 
         print(f"Answer: {answer}") 
