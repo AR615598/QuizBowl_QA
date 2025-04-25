@@ -1,5 +1,4 @@
 # QuizBowl_QA
----
 ## What and Why Quizbowl
 Quiz bowl is a competition that encompasses a broad range of topics. Two teams compete against each other simultaneously, competing to answer the question before there oponents. There are two key distinctions between quiz bowl and a typical quiz competition. Firstly, competitors have the ability to "buzz in" at any point during the question while it is being read by the moderator. This feature transforms the competition into a test of analytical thinking, rather than a recall task.
 Another key difference lies in the format of the questions. Quiz bowl questions are typically longer and more detailed compared to those in a typical quiz competition. They consist of various somewhat unrelated clues that collectively lead to the answer. As the question progresses, the information provided becomes increasingly specific. This unique structure creates a competition where participants must strike a balance between confidence and speed. They need to accurately interpret the clues and make quick decisions on when to buzz in with their response.
